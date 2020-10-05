@@ -20,7 +20,8 @@ BG_IMG = pygame.transform.scale(pygame.image.load(os.path.join('imgs','bg.png'))
 
 class Bird :
     IMGS = BIRD_IMGS
-
+    jump_sound = pygame.mixer.Sound(os.path.join('sounds','sfx_wing.wav'))
+    
     def __init__(self,x,y):
         self.x = x
         self.y = y
@@ -35,6 +36,8 @@ class Bird :
         self.rot_vel = 10
         self.angle=0
         self.rotated_image=self.img
+        self.soundTimer = 0
+        self.soundTimerLim = 7
 
     def draw(self,win):
         self.move()
@@ -48,9 +51,16 @@ class Bird :
         win.blit(rot_img,(self.x,self.y))
 
     def jump(self):
+        if(self.soundTimer==0):
+            pygame.mixer.Sound.play(self.jump_sound)
+            self.soundTimer+=1
+        if(self.soundTimer!=0) :
+            self.soundTimer = (self.soundTimer+ 1)%self.soundTimerLim
+        
         self.vel = -10
         self.height=self.y
         self.tick=0
+
 
     def move(self):
         self.tick+=1
@@ -142,16 +152,20 @@ class Pipe:
         return False
 
 class Score :
+    pointsound = pygame.mixer.Sound(os.path.join('sounds','sfx_point.wav'))
     def __init__(self):
         self.val=0
     def inc(self):
+        pygame.mixer.Sound.play(self.pointsound)
         self.val+=1
+
     def draw(self,win,font):
         text = font.render("Score - " + str(self.val),1,(255,255,255))
         win.blit(text,(win_width-200,50))
 
 def pauseScreen(win,bird,score,pipes):
-    
+    die_sound = pygame.mixer.Sound(os.path.join('sounds','sfx_die.wav'))
+    pygame.mixer.Sound.play(die_sound)
     run=True
     currentScore = largeFont.render('Score: '+ str(score.val),1,(255,255,255))
     instruction = smallFont.render("Press mouse button to play again",1,(255,255,255))
@@ -192,17 +206,15 @@ def win_draw(win,bird,base,pipes,score,font):
 def main():
     global largeFont, smallFont
     #Frame Rate 30FPS
-    clock = pygame.time.Clock()
-    clock.tick(.1)
-
-    #Initalising window
+    
+    #Initalising window 
     win = pygame.display.set_mode((win_width,win_height))
     run=True
     #Initilaising moving floor
     base = Base()
 
     #Initiasling Bird Object
-    bird = Bird(100,200)
+    bird = Bird(100,100)
 
     #Score
     font = pygame.font.SysFont('helvetica',30)
@@ -217,10 +229,12 @@ def main():
     pipes = []
 
     pause=False
-    
+    clock = pygame.time.Clock()
+
     #Main Game Loop
     while run:
-        
+        clock.tick(60)
+        # pygame.time.delay(500)
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 run=False
